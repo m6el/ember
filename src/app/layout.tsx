@@ -20,7 +20,7 @@ const ppEditorial = localFont({
         weight: '400',
         style: 'normal',
       }
-    ]
+    ], variable: "--font-pp-editorial"
 });
 
 export const metadata: Metadata = {
