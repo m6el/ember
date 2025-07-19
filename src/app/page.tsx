@@ -1,66 +1,136 @@
-export default function Page() {
+import { Bell } from 'lucide-react';
+import { HomeCard } from "@/components/Ember Components/HomeCard";
+
+async function getActivities() {
+    // In a real app, you'd fetch this from an API.
+    return [
+        {
+            time: "9:41 AM",
+            student: "John Doe",
+            misStatus: 1,
+            summary: "Student on holiday",
+            status: "Confirmed",
+            type: "Absence Request",
+        },
+        {
+            time: "9:35 AM",
+            student: "Jane Smith",
+            misStatus: 2,
+            summary: "No answer",
+            status: "Pending",
+            type: "Phone Call",
+        },
+        {
+            time: "May 20, 8:12 AM",
+            student: "Sam Wilson",
+            misStatus: 4,
+            summary: "Wrong number",
+            status: "Failed",
+            type: "Phone Call",
+        },
+        {
+            time: "May 20, 8:05 AM",
+            student: "Bucky Barnes",
+            misStatus: 1,
+            summary: "Feeling unwell",
+            status: "Confirmed",
+            type: "Absence Request",
+        },
+    ];
+}
+
+export default async function Page() {
+    const activities = await getActivities();
+
+    const statusBadge = (status: string) => {
+        let badgeClasses = "inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium capitalize";
+        switch (status) {
+            case 'Confirmed':
+                badgeClasses += " bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+                break;
+            case 'Pending':
+                badgeClasses += " bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+                break;
+            case 'Failed':
+                badgeClasses += " bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+                break;
+            default:
+                badgeClasses += " bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+        }
+        return <span className={badgeClasses}>{status}</span>;
+    };
+
     return (
-        <div className="flex min-h-screen bg-[#f6f9fc]">
-            {/* Sidebar */}
-            <aside className="w-64 bg-white border-r flex flex-col">
-                <div className="p-6 font-bold text-2xl tracking-tight text-[#32325d] border-b">Ember</div>
-                <nav className="flex-1 p-4">
-                    <ul className="space-y-1">
-                        <li>
-                            <a href="#" className="block px-4 py-2 rounded font-medium text-[#32325d] hover:bg-[#f6f9fc] transition">
-                                Dashboard
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" className="block px-4 py-2 rounded font-medium text-[#32325d] hover:bg-[#f6f9fc] transition">
-                                Courses
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" className="block px-4 py-2 rounded font-medium text-[#32325d] hover:bg-[#f6f9fc] transition">
-                                Assignments
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" className="block px-4 py-2 rounded font-medium text-[#32325d] hover:bg-[#f6f9fc] transition">
-                                Students
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#" className="block px-4 py-2 rounded font-medium text-[#32325d] hover:bg-[#f6f9fc] transition">
-                                Settings
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-                <div className="p-4 border-t text-xs text-gray-400">© 2024 Edu Inc.</div>
-            </aside>
-            {/* Main Content */}
-            <main className="flex-1 p-10">
-                <h1 className="text-3xl font-semibold text-[#32325d] mb-8">Welcome, Teacher!</h1>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
-                        <div className="text-xs uppercase text-gray-500 mb-2 tracking-wide">Courses</div>
-                        <div className="text-4xl font-bold text-[#32325d]">8</div>
-                    </div>
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
-                        <div className="text-xs uppercase text-gray-500 mb-2 tracking-wide">Students</div>
-                        <div className="text-4xl font-bold text-[#32325d]">120</div>
-                    </div>
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
-                        <div className="text-xs uppercase text-gray-500 mb-2 tracking-wide">Assignments</div>
-                        <div className="text-4xl font-bold text-[#32325d]">24</div>
+       <>
+        <div className="flex">
+            <div className="w-72 bg-gray-100 h-screen">
+
+            </div>
+            <div className="p-6 w-full h-full">
+               {/* navbar */}
+                <div className="flex">
+                    <input className="p-3 text-sm w-1/2 rounded-lg bg-[#F6F6F6]" type="text" placeholder="Search students, report or Ember AI"/>
+                    <div className="ml-auto flex items-center gap-4">
+                        <Bell />
+                        <div className='w-8 h-8 bg-black rounded-full' ></div>
                     </div>
                 </div>
-                <div className="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 className="text-lg font-semibold text-[#32325d] mb-4">Recent Activity</h2>
-                    <ul className="divide-y">
-                        <li className="py-3 text-gray-700">Student John Doe submitted Assignment 3.</li>
-                        <li className="py-3 text-gray-700">New course "Physics 101" added.</li>
-                        <li className="py-3 text-gray-700">Assignment 2 graded.</li>
-                    </ul>
+
+                <div className='flex items-center'>
+                    <h1 className="font-['ppEditorial'] text-4xl mt-16 text-[#232323] ">Home</h1>
+                    <button type="button" className='cursor-pointer px-4 py-1.5 border border-1.5 border-[#4C55CF] text-white font-semibold bg-[#5964F4] rounded-xl ml-auto'>Initiate Call</button>
+                </div> 
+
+                <h1 className="text-lg text-[#232323] pt-2 ">Ember has made currently made 12 phone calls today and received  14 absence requests from parents.</h1>
+
+
+                <div className='flex space-x-4'>
+                    <HomeCard title="📈 Statistics" subtitle="Calls Today" value="12" />
+                    <HomeCard title="📈 Statistics" subtitle="Confirmed Absences" value="8" />
+                    <HomeCard title="❗️Follow Ups" subtitle="Pending Absences" value="4 "/>
+                    <HomeCard title="📊 Performance" subtitle="Absences since last month" value="-12" />
                 </div>
-            </main>
+
+                <div className="mt-8 border-t border-slate-100 dark:border-slate-800">
+                    <p className='mt-4 text-lg font-medium'>Recent Activity</p>
+                    <div className="mt-4">
+                        <table className="min-w-full">
+                            <thead className="border-b border-gray-200 dark:border-gray-700">
+                                <tr>
+                                    <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-500">Time</th>
+                                    <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-500">Student</th>
+                                    <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-500">MIS Status</th>
+                                    <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-500">Summary</th>
+                                    <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-500">Status</th>
+                                    <th scope="col" className="py-3.5 px-4 text-left text-sm font-semibold text-gray-500">Type</th>                                    
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {activities.map((activity, index) => (
+                                    <tr key={index}>
+                                        <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{activity.time}</td>
+                                        <td className="whitespace-nowrap px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">{activity.student}</td>
+                                        <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500">
+                                            <select defaultValue={activity.misStatus} className="bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-gray-900 dark:text-white">
+                                                <option>1</option>
+                                                <option>2</option>
+                                                <option>3</option>
+                                                <option>4</option>
+                                            </select>
+                                        </td>
+                                        <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{activity.summary}</td>
+                                        <td className="whitespace-nowrap px-4 py-4 text-sm">
+                                            {statusBadge(activity.status)}
+                                        </td>
+                                        <td className="whitespace-nowrap px-4 py-4 text-sm text-gray-500 dark:text-gray-400">{activity.type}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+           </div>
         </div>
+       </>
     );
 }
