@@ -38,7 +38,7 @@ export default async function Page() {
                             <textarea
                                 placeholder='I need a presentation for an English lesson about how Lady Macbeth is presented throughout Macbeth'
                                 className='w-full text-base pr-12 resize-none mb-4'
-                                rows={1}
+                                rows={2}
                             />
                             <div className="flex justify-end items-center gap-4">
                                 <button className='w-10 cursor-pointer h-10 flex items-center justify-center bg-black rounded-4xl'>
