@@ -4,9 +4,11 @@ import { ComboboxDemo } from '@/components/Ember Components/Combobox';
 import { YearCombobox } from '@/components/Ember Components/YearCombobox';
 import { ArrowUp } from 'lucide-react';
 import { useState, useRef, useEffect, CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
 
 
 export default function Page() {
+    const router = useRouter();
     const [submitted, setSubmitted] = useState(false);
     const [prompt, setPrompt] = useState("");
     const [step, setStep] = useState(0); // 0: all visible, 1: header animating, 2: comboboxes disappear, 3: textarea moves down
@@ -14,10 +16,29 @@ export default function Page() {
     const headerRef = useRef(null);
     const textareaRef = useRef<HTMLDivElement>(null);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (prompt.trim()) {
             setSubmitted(true);
             setStep(1); // header animates up
+            try {
+                const res = await fetch('http://localhost:8888/c', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                const data = await res.json();
+                console.log(data)
+                if (data && data.id) {
+                    router.push(`/responses/${data.id}`);
+                } else {
+                    // fallback error
+                    setSubmitted(false);
+                    setStep(0);
+                }
+            } catch (err) {
+                setSubmitted(false);
+                setStep(0);
+            }
         }
     };
 
@@ -51,7 +72,6 @@ export default function Page() {
     useEffect(() => {
         if (step === 3 && textareaRef.current) {
             const rect = textareaRef.current.getBoundingClientRect();
-            // Set initial fixed position at current top
             setTextareaStyle({
                 position: 'fixed',
                 top: `${rect.top}px`,
@@ -63,7 +83,6 @@ export default function Page() {
                 transition: 'top 1s cubic-bezier(0.4, 0, 0.2, 1)', // smooth slide down
                 boxShadow: '0 -4px 12px rgba(0,0,0,0.08)', // match final shadow
             });
-            // Animate to bottom after a frame
             const frameId = requestAnimationFrame(() => {
                 setTextareaStyle(prev => ({
                     ...prev,
@@ -77,9 +96,16 @@ export default function Page() {
                     boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
                 }));
             });
-            return () => cancelAnimationFrame(frameId);
+
+            const navigationTimeout = setTimeout(() => {
+            }, 500); // Corresponds to the animation duration
+
+            return () => {
+                cancelAnimationFrame(frameId);
+                clearTimeout(navigationTimeout);
+            };
         }
-    }, [step]);
+    }, [step, router]);
 
     return (
        <>
@@ -134,6 +160,7 @@ export default function Page() {
                                 rows={2}
                             />
                             <div className="flex justify-end items-center gap-4">
+                                {/* Change button to use async handleSubmit */}
                                 <button
                                     className='w-8 cursor-pointer h-8 flex items-center justify-center bg-[#FFA639] rounded-lg disabled:opacity-50'
                                     disabled={!prompt.trim()}
