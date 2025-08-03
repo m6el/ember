@@ -1,36 +1,92 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Bell } from 'lucide-react';
+import { Bell, CheckCircle2 } from 'lucide-react';
+import PocketBase, { type RecordModel } from 'pocketbase';
+
+// Initialize PocketBase client
+const pb = new PocketBase('http://localhost:8888');
+
+// A simple loading spinner component
+const LoadingSpinner = () => (
+    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500"></div>
+);
+
+interface ResponseRecord extends RecordModel {
+    userPrompt: string;
+    emberResponse: string;
+    generatingPowerpointStatus: string;
+    generatingWorksheetStatus: string;
+}
 
 export default function Responses() {
     const params = useParams();
-    const id = typeof params === 'object' && params.id ? params.id : '';
+    const id = typeof params === 'object' && params?.id ? String(params.id) : '';
     const [loading, setLoading] = useState(true);
     const [typedText, setTypedText] = useState("");
     const [aiText, setAiText] = useState("");
     const [userPrompt, setUserPrompt] = useState("");
+    const [generatingPowerpointStatus, setGeneratingPowerpointStatus] = useState("");
+    const [generatingWorksheetStatus, setGeneratingWorksheetStatus] = useState("");
 
-    // Fetch chat by id from server
+    // Fetch chat by id from server and subscribe to real-time updates
     useEffect(() => {
-        if (!id) return;
+        if (!id) {
+            setLoading(false);
+            return;
+        };
+
         setLoading(true);
         setTypedText("");
         setAiText("");
         setUserPrompt("");
-        fetch(`http://localhost:8888/c/${id}`)
-            .then(res => {
-                if (!res.ok) throw new Error('Not found');
-                return res.json();
-            })
-            .then(data => {
+        setGeneratingPowerpointStatus("");
+        setGeneratingWorksheetStatus("");
+
+        let isMounted = true;
+
+        const fetchAndSubscribe = async () => {
+            try {
+                const data = await pb.collection('responses').getOne<ResponseRecord>(id);
+                if (!isMounted) return;
+
                 setUserPrompt(data.userPrompt || "");
                 setAiText(data.emberResponse || "");
-            })
-            .catch(() => {
+                setGeneratingPowerpointStatus(data.generatingPowerpointStatus || "");
+                setGeneratingWorksheetStatus(data.generatingWorksheetStatus || "");
+                setLoading(false);
+
+                await pb.collection('responses').subscribe(id, (e) => {
+                    if (!isMounted) return;
+                    const record = e.record as ResponseRecord;
+                    
+                    setAiText(currentAiText => {
+                        if (record.emberResponse && record.emberResponse !== currentAiText) {
+                            setTypedText(""); // Reset typewriter for new response
+                            return record.emberResponse;
+                        }
+                        return currentAiText;
+                    });
+                    setGeneratingPowerpointStatus(record.generatingPowerpointStatus || "");
+                    setGeneratingWorksheetStatus(record.generatingWorksheetStatus || "");
+                });
+
+            } catch (err) {
+                if (!isMounted) return;
+                console.error("Failed to fetch or subscribe:", err);
                 setAiText("Sorry, there was an error fetching the chat.");
-            })
-            .finally(() => setLoading(false));
+                setLoading(false);
+            }
+        };
+
+        fetchAndSubscribe();
+
+        return () => {
+            isMounted = false;
+            if (id) {
+                pb.collection('responses').unsubscribe(id).catch(() => {});
+            }
+        };
     }, [id]);
 
     // Typewriter effect for aiText
@@ -42,6 +98,26 @@ export default function Responses() {
             return () => clearTimeout(typeTimer);
         }
     }, [loading, typedText, aiText]);
+
+    const renderStatus = (status: string, type: string) => {
+        if (status === 'loading') {
+            return (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <LoadingSpinner />
+                    <span>Generating {type}...</span>
+                </div>
+            );
+        }
+        if (status === 'completed') {
+            return (
+                <div className="flex items-center space-x-2 text-sm text-green-600">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span>Generation complete for {type.toLowerCase()}</span>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <>
@@ -77,6 +153,10 @@ export default function Responses() {
                                 className="prose max-w-none"
                                 dangerouslySetInnerHTML={{ __html: typedText }}
                             />
+                            <div className="flex flex-col items-start space-y-2 mt-6">
+                                {renderStatus(generatingPowerpointStatus, 'PowerPoint')}
+                                {renderStatus(generatingWorksheetStatus, 'Worksheet')}
+                            </div>
                         </div>
                     ) : (
                         <div className="flex flex-col space-y-4 mt-20 w-1/2 mx-auto">
