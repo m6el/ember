@@ -5,7 +5,12 @@ import { Bell, CheckCircle2 } from 'lucide-react';
 import PocketBase, { type RecordModel } from 'pocketbase';
 
 // Initialize PocketBase client
-const pb = new PocketBase('http://localhost:8888');
+const pb = new PocketBase('https://ember.pockethost.io');
+
+    await pb.collection('_superusers').authWithPassword(
+        'e@e.com',
+        'ember',
+    );
 
 // A simple loading spinner component
 const LoadingSpinner = () => (
