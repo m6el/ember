@@ -2,22 +2,17 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Bell, CheckCircle2 } from 'lucide-react';
-import PocketBase, { type RecordModel } from 'pocketbase';
+import io from 'socket.io-client';
 
-// Initialize PocketBase client
-const pb = new PocketBase('https://ember.pockethost.io');
-
-    await pb.collection('_superusers').authWithPassword(
-        'e@e.com',
-        'ember',
-    );
+// Socket.io client will be initialized inside the component
 
 // A simple loading spinner component
 const LoadingSpinner = () => (
     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500"></div>
 );
 
-interface ResponseRecord extends RecordModel {
+// Define the response record structure
+interface ResponseRecord {
     userPrompt: string;
     emberResponse: string;
     generatingPowerpointStatus: string;
@@ -39,7 +34,7 @@ export default function Responses() {
         if (!id) {
             setLoading(false);
             return;
-        };
+        }
 
         setLoading(true);
         setTypedText("");
@@ -49,10 +44,17 @@ export default function Responses() {
         setGeneratingWorksheetStatus("");
 
         let isMounted = true;
+        
+        // Initialize Socket.io client
+        const socket = io('http://localhost:8888');
 
-        const fetchAndSubscribe = async () => {
+        // Initial data fetch via REST API
+        const fetchInitialData = async () => {
             try {
-                const data = await pb.collection('responses').getOne<ResponseRecord>(id);
+                const response = await fetch(`http://localhost:8888/c/${id}`);
+                if (!response.ok) throw new Error('Failed to fetch response data');
+                
+                const data: ResponseRecord = await response.json();
                 if (!isMounted) return;
 
                 setUserPrompt(data.userPrompt || "");
@@ -60,37 +62,69 @@ export default function Responses() {
                 setGeneratingPowerpointStatus(data.generatingPowerpointStatus || "");
                 setGeneratingWorksheetStatus(data.generatingWorksheetStatus || "");
                 setLoading(false);
-
-                await pb.collection('responses').subscribe(id, (e) => {
-                    if (!isMounted) return;
-                    const record = e.record as ResponseRecord;
-                    
-                    setAiText(currentAiText => {
-                        if (record.emberResponse && record.emberResponse !== currentAiText) {
-                            setTypedText(""); // Reset typewriter for new response
-                            return record.emberResponse;
-                        }
-                        return currentAiText;
-                    });
-                    setGeneratingPowerpointStatus(record.generatingPowerpointStatus || "");
-                    setGeneratingWorksheetStatus(record.generatingWorksheetStatus || "");
-                });
-
             } catch (err) {
                 if (!isMounted) return;
-                console.error("Failed to fetch or subscribe:", err);
+                console.error("Failed to fetch initial data:", err);
                 setAiText("Sorry, there was an error fetching the chat.");
                 setLoading(false);
             }
         };
 
-        fetchAndSubscribe();
+        // Set up socket connection and event handlers
+        socket.connect();
+        socket.emit('join_response', id);
+
+        // Handle initial data from socket
+        socket.on('response_data', (data: ResponseRecord) => {
+            if (!isMounted) return;
+            
+            setUserPrompt(data.userPrompt || "");
+            setAiText(data.emberResponse || "");
+            setGeneratingPowerpointStatus(data.generatingPowerpointStatus || "");
+            setGeneratingWorksheetStatus(data.generatingWorksheetStatus || "");
+            setLoading(false);
+        });
+
+        // Handle real-time updates
+        socket.on('response_update', (record: ResponseRecord) => {
+            if (!isMounted) return;
+            
+            setAiText(currentAiText => {
+                if (record.emberResponse && record.emberResponse !== currentAiText) {
+                    setTypedText(""); // Reset typewriter for new response
+                    return record.emberResponse;
+                }
+                return currentAiText;
+            });
+            setGeneratingPowerpointStatus(record.generatingPowerpointStatus || "");
+            setGeneratingWorksheetStatus(record.generatingWorksheetStatus || "");
+        });
+
+        // Handle errors
+        socket.on('error', (error: Error) => {
+            if (!isMounted) return;
+            console.error("Socket error:", error);
+            setAiText("Sorry, there was an error with the real-time connection.");
+        });
+
+        // Fetch initial data in case socket is slow to connect
+        fetchInitialData();
 
         return () => {
             isMounted = false;
+            
+            // Leave the response room before cleaning up
             if (id) {
-                pb.collection('responses').unsubscribe(id).catch(() => {});
+                socket.emit('leave_response', id);
             }
+            
+            // Remove all event listeners
+            socket.off('response_data');
+            socket.off('response_update');
+            socket.off('error');
+            
+            // Disconnect socket
+            socket.disconnect();
         };
     }, [id]);
 
